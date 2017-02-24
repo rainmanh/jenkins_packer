@@ -1,0 +1,23 @@
+- job:
+    # Specify your job name.
+    name: test_job
+    builders:
+      - shell:
+          'echo test!'
+    description: 'This is my first Jenkins Job defined in YAML file format.'
+    # Define Vars used by the shell script; assign them default values.
+    parameters:
+        - string:
+            name: MESSAGE
+            default: 'Free Hello for all.'
+        - string:
+            name: MAX_COUNT
+            default: '3'
+    # Automatically start (trigger) the job's build at 12:00 and 15:00 on every day.
+    triggers:
+        - timed: '0 12,15 * * *'
+    wrappers:
+      - timeout:
+          fail: true
+          # Timeout job after 120 seconds of its execution. If timeout happens = fail the build.
+          timeout: 2

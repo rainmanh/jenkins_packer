@@ -1,0 +1,36 @@
+---
+- name: debian | Installing Pre-Reqs for Ubuntu Precise and Older
+  apt:
+    name: "{{ item }}"
+    state: "present"
+  with_items:
+    - 'python-software-properties'
+  when: ansible_distribution_version|int < 14
+
+- name: debian | Adding Jenkins Repo Key
+  apt_key:
+    url: "{{ jenkins_repo_key }}"
+    state: "present"
+
+- name: debian | Adding Jenkins Repo
+  apt_repository:
+    repo: "{{ jenkins_apt_repo }}"
+    state: "present"
+
+- name: debian | Installing Jenkins Pre-Reqs
+  apt:
+    name: "{{ item }}"
+    state: "latest"
+  with_items: '{{ jenkins_debian_pre_req_packages }}'
+
+- name: debian | Installing Jenkins
+  apt:
+    name: "jenkins"
+    state: "present"
+
+- name: debian | Get default Jenkins home
+  shell: "grep 'JENKINS_HOME=' /etc/default/jenkins | awk -F 'JENKINS_HOME=' '{print $2}'"
+  register: jenkins_initial_default_home
+
+- name: Update /etc/default/jenkins on Ubuntu
+  template: src=../ansible/roles/jenkins/templates/etc/default/jenkins.j2 dest=/etc/default/jenkins

@@ -1,0 +1,49 @@
+
+#variables
+
+VAGRANTFILE_API_VERSION = "2"
+VAGRANTFILE="file://ubuntu-16.10-virtualbox-20170223154251.box"
+VIRTUALBOX_NAME="jenkins"
+VIRTUALBOX_MEMORY="2048"
+VIRTUALBOX_CPUS="1"
+
+#Installing Required Plugins
+required_plugins = %w( vagrant-vbguest )
+required_plugins.each do |plugin|
+    exec "vagrant plugin install #{plugin};vagrant #{ARGV.join(" ")}" unless Vagrant.has_plugin? plugin || ARGV[0] == 'plugin'
+end
+
+
+Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
+  config.vm.box = (VAGRANTFILE)
+  config.vm.network "forwarded_port", guest: 8080, host: 8080
+  config.ssh.insert_key = false
+
+  config.ssh.private_key_path = [ "~/.ssh/id_rsa", "~/.vagrant.d/insecure_private_key" ]
+
+  config.vm.provision "file", source: "~/.ssh/id_rsa", destination: "~/.ssh/authorized_keys"
+
+  config.vm.provision :file do |file|
+    file.source = "~/.ssh/id_rsa.pub"
+    file.destination = "~/.ssh/authorized_keys"
+  end
+
+  config.vbguest.auto_update = true
+  config.vbguest.no_remote = true
+
+  config.vm.provision "shell", inline: <<-EOC
+    echo 127.0.0.1 `hostname` |sudo tee -a /etc/hosts
+    sudo sed -i -e "\\#PasswordAuthentication yes# s#PasswordAuthentication yes#PasswordAuthentication no#g" /etc/ssh/sshd_config
+    sudo sed -i "s/#AuthorizedKeysFile/AuthorizedKeysFile/g" /etc/ssh/sshd_config
+    sudo service ssh restart
+  EOC
+
+  config.vm.provider :virtualbox do |vb|
+    vb.gui = false
+    vb.name = (VIRTUALBOX_NAME)
+    vb.memory = (VIRTUALBOX_MEMORY)
+    vb.cpus = (VIRTUALBOX_CPUS)
+    vb.customize ["modifyvm", :id, "--natdnshostresolver1", "on"]
+    vb.customize ["modifyvm", :id, "--ioapic", "on"]
+  end
+end

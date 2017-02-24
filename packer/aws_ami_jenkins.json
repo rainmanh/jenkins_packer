@@ -1,0 +1,132 @@
+{
+  "variables": {
+    "AWS_PROFILE": "<AWS_PROFILE>",
+    "AMI_SOURCE_ID": "ami-844e0bf7",
+    "AWS_REGION": "eu-west-1",
+    "BUILD_SUBNET_ID": "subnet-xxxxxx",
+    "INSTANCE_TYPE": "t2.micro",
+    "VPC_ID": "vpc-xxxxxx",
+    "volume_size" : "40",
+    "device_name": "/dev/sdf",
+    "OWNER": "<project_owner>",
+    "EMAIL": "<email_address>",
+    "PROJECT": "jenkins Account",
+    "ENVIRONMENT": "Staging",
+    "JOB_NAME": "jenkins-packer-builder",
+    "JOB_DESCRIPTION": "Packer job to build Jenkins AMIs",
+    "AMI_NAME": "jenkins_base",
+    "AMI_DESCRIPTION": "JENKINS AMI"
+  },
+  "builders": [{
+    "type": "amazon-ebs",
+    "access_key": "{{user `AWS_ACCESS_KEY`}}",
+    "secret_key": "{{user `AWS_SECRET_KEY`}}",
+    "region": "{{user `AWS_REGION`}}",
+    "source_ami": "{{user `AMI_SOURCE_ID`}}",
+    "instance_type": "{{user `INSTANCE_TYPE`}}",
+    "ssh_username": "ubuntu",
+    "subnet_id": "{{user `BUILD_SUBNET_ID`}}",
+    "vpc_id": "{{user `VPC_ID`}}",
+    "ami_block_device_mappings": [{
+        "device_name": "{user `device_name`}}",
+        "volume_type": "gp2",
+        "volume_size": "{{user `volume_size`}}",
+        "delete_on_termination": true,
+        "encrypted": true
+      }],
+      "launch_block_device_mappings": [{
+          "device_name": "{user `device_name`}}",
+          "volume_type": "gp2",
+          "volume_size": "{{user `volume_size`}}",
+          "delete_on_termination": true,
+          "encrypted": true
+        }],
+    "run_tags": {
+      "Name": "{{user `JOBNAME`}} - {{isotime \"20060102.0304\"}}",
+      "Description": "{{user `JOB_DESCRIPTION`}}",
+      "owner": "{{user `OWNER`}}",
+      "email": "{{user `EMAIL`}}",
+      "project": "{{user `PROJECT`}}",
+      "environment": "{{user `ENVIRONMENT`}}"
+    },
+    "run_volume_tags": {
+      "Name": "{{user `JOBNAME`}} {{isotime \"20060102.0304\"}}",
+      "Description": "{{user `JOB_DESCRIPTION`}}",
+      "owner": "{{user `OWNER`}}",
+      "email": "{{user `EMAIL`}}",
+      "project": "{{user `PROJECT`}}",
+      "environment": "{{user `ENVIRONMENT`}}"
+    },
+    "tags": {
+      "Name": "{{user `AMI_NAME`}}",
+      "Description": "{{user `AMI_DESCRIPTION`}}, based on {{user `AMI_SOURCE_ID`}}",
+      "owner": "{{user `OWNER`}}",
+      "email": "{{user `EMAIL`}}",
+      "project": "{{user `PROJECT`}}",
+      "environment": "{{user `ENVIRONMENT`}}"
+    },
+    "ami_name": "{{user `AMI_NAME`}}-{{isotime \"20060102.0304\" | clean_ami_name }}"
+  }],
+  "provisioners": [
+    {
+    "type": "shell",
+    "inline": [
+      "sleep 5",
+      "sudo DEBIAN_FRONTEND=noninteractive apt-get update",
+      "sudo DEBIAN_FRONTEND=noninteractive apt-get -o Dpkg::Options::='--force-confnew' --force-yes -fuy dist-upgrade"
+    ]
+  },
+  {
+      "type": "shell",
+      "inline": [
+        "sudo mkfs.ext4 {{user `volume_size`}}",
+        "sudo mkdir /data",
+        "echo '{{user `volume_size`}} /data ext4 defaults 1 2' | sudo dd of=/etc/fstab",
+        "sudo mount /data"
+      ]
+    },
+    { "type": "file",
+      "source": "scripts/cloud-init-growpart",
+      "destination": "/tmp/06-growpart.cfg"
+    },
+  { "type": "shell",
+     "inline": [
+       "sleep 5",
+       "sudo apt-get install -y cloud-init cloud-initramfs-growroot cloud-utils-euca wget unzip",
+       "sudo mv /tmp/06-growpart.cfg /etc/cloud/cloud.cfg.d",
+       "sudo apt-get update",
+       "wget http://s3.amazonaws.com/ec2-downloads/ec2-ami-tools.zip",
+       "sudo mkdir -p /usr/local/ec2",
+       "sudo unzip ec2-ami-tools.zip -d /usr/local/ec2"
+     ],
+     "only": [ "amazon-ebs" ]
+   },
+   {
+     "type": "shell",
+     "scripts": [
+       "scripts/provisioning.sh"
+     ]
+   },
+   {
+     "type": "shell",
+     "inline": [
+       "sleep 5",
+       "sudo mkdir -p /opt/ansible/roles;sudo chmod 777 -R /opt/ansible/",
+       "sudo chown -R ubuntu:ubuntu /home/ubuntu/.ansible"
+        ]
+   },
+   {
+       "type": "ansible-local",
+       "playbook_dir": "../ansible",
+       "staging_directory": "/opt/ansible/",
+       "inventory_file" : "../ansible/hosts",
+       "playbook_file": "../ansible/main.yml",
+       "extra_arguments": [
+         "--extra-vars \"ansible_os_family=Debian\""
+        ],
+       "role_paths": [
+           "../ansible/roles/"
+         ]
+   }
+]
+}

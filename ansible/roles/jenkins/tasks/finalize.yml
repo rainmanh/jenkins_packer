@@ -1,0 +1,24 @@
+---
+#- name: finalize | Registering Default Jenkins Home
+#  stat:
+#    path: "/var/lib/jenkins"
+#  register: "jenkins_initial_default_home"
+#  when: ansible_os_family == "Debian"
+
+- name: finalize | Updating the secrets
+  become: yes
+  become_method: sudo
+  shell: "cp -p /var/lib/jenkins/secrets/initialAdminPassword {{ jenkins_home_dir }}/secrets/initialAdminPassword"
+  ignore_errors: True
+  when: ( ansible_os_family == "Debian" ) and ( "{{ jenkins_home_dir }}" != "{{ jenkins_initial_default_home.stdout }}" )
+
+- name: finalize | Checking If Initial Admin Password Exists
+  stat:
+    path: "{{ jenkins_home_dir }}/secrets/initialAdminPassword"
+  register: "jenkins_initial_password_check"
+
+- name: finalize | Capturing Initial Admin Password
+  command: "cat {{ jenkins_home_dir }}/secrets/initialAdminPassword"
+  register: "jenkins_initialAdminPassword"
+  changed_when: false
+  when:  jenkins_initial_password_check.stat.exists

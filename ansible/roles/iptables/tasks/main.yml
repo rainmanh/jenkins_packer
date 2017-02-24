@@ -1,0 +1,42 @@
+---
+# Installs IPtables + Iptables-Persistent
+- name: iptables | install_iptables_persistent
+  environment:
+    DEBIAN_FRONTEND: noninteractive
+  apt: pkg={{ item }} state=installed
+  with_items:
+    - "iptables"
+    - "iptables-persistent"
+
+# Allow Traffic from 8080
+- name: iptables | Allow Traffic from 8080
+  iptables:
+    chain: INPUT
+    ctstate: NEW,ESTABLISHED
+    in_interface: eth0
+    protocol: tcp
+    match: tcp
+    destination_port: 8080
+    jump: ACCEPT
+    comment: Allow Traffic from 8080
+  become: yes
+
+# Allow Traffic from 22
+- name: iptables | Allow Traffic from 22
+  iptables:
+    chain: INPUT
+    ctstate: NEW,ESTABLISHED
+    in_interface: eth0
+    protocol: tcp
+    match: tcp
+    destination_port: 22
+    jump: ACCEPT
+    comment: Allow Traffic from 22
+  become: yes
+
+- name: iptables | save iptable rules
+  shell: "/etc/init.d/netfilter-persistent save"
+  args:
+    executable: /bin/bash
+  become: yes
+  become_method: sudo

@@ -1,0 +1,83 @@
+---
+- name: plugins | Ensuring Jenkins Is Running
+  service:
+    name: "jenkins"
+    state: "started"
+
+- name: plugins | Waiting For Jenkins To Start
+  wait_for:
+    port: 8080
+    delay: 20
+
+- name: plugins | Downloading jenkins-cli
+  get_url:
+    url: "http://localhost:8080/jnlpJars/jenkins-cli.jar"
+    dest: "{{ jenkins_home_dir }}/jenkins-cli.jar"
+    owner: "jenkins"
+    group: "jenkins"
+
+- name: config_jenkins | Checking If Secure Setup
+  stat:
+    path: "{{ jenkins_home_dir }}/.jenkins_secure_setup"
+  register: jenkins_secure_setup
+  when: jenkins_config_info.use_security is defined
+
+- name: plugins | Gathering Plugins With Updates Available
+  shell: "java -jar {{ jenkins_cli_path }} -s http://localhost:8080 list-plugins | grep -e ')$' | awk '{ print $1 }'"
+  register: "jenkins_plugin_updates"
+  changed_when: false
+  when: >
+        not jenkins_secure_setup.stat.exists
+
+- name: plugins | Upgrading Installed Plugins
+  shell: "java -jar {{ jenkins_cli_path }} -s http://localhost:8080 install-plugin {{ item }}"
+  notify:
+    - 'restart jenkins'
+  with_items: '{{ jenkins_plugin_updates.stdout_lines }}'
+  when: >
+        not jenkins_secure_setup.stat.exists
+
+- name: Stop Jenkins
+  service: name=jenkins  state=stopped
+
+- name: plugins | Gathering Installed Plugins
+  shell: "java -jar {{ jenkins_cli_path }} -s http://localhost:8080 list-plugins | cut -f 1 -d ' '"
+  register: "jenkins_installed_plugins"
+  changed_when: false
+  when: >
+        not jenkins_secure_setup.stat.exists
+
+- name: preparation for plugins | Disabling Security
+  replace:
+    dest: /var/lib/jenkins/config.xml
+    regexp: '^(.*)<denyAnonymousReadAccess>true</denyAnonymousReadAccess>(.*)$'
+    replace: '\1<denyAnonymousReadAccess>false</denyAnonymousReadAccess>\2'
+
+- name: preparation for plugins | Disabling Security
+  replace:
+    dest: /var/lib/jenkins/config.xml
+    regexp: '^(.*)hudson.security.FullControlOnceLoggedInAuthorizationStrategy(.*)$'
+    replace: '\1hudson.security.AuthorizationStrategy$Unsecured\2'
+  notify:
+    - 'restart jenkins'
+
+- name: plugins | Ensuring Jenkins Is Running
+  service:
+    name: "jenkins"
+    state: "started"
+
+- name: plugins | Waiting For Jenkins To Start
+  wait_for:
+    port: 8080
+    delay: 10
+
+- include: jenkins_jobs.yml
+
+- name: plugins | Installing Plugins
+  shell: "java -jar {{ jenkins_cli_path }} -s http://localhost:8080 install-plugin {{ item }}; sleep 10"
+  notify:
+    - 'restart jenkins'
+  with_items: '{{ jenkins_plugins }}'
+  when: >
+        not jenkins_secure_setup.stat.exists and
+        item not in jenkins_installed_plugins.stdout_lines

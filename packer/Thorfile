@@ -1,0 +1,27 @@
+# vi: ft=ruby
+# Thorfile for Packer template validation
+require 'thor'
+require 'fileutils'
+require 'timeout'
+
+class Packer < Thor
+  desc 'validate', 'Validate all the packer templates'
+  def validate
+      templates = Dir.glob("*.json")
+      templates.each do |template|
+        puts "#{template}"
+        system "packer validate #{template}" or fail 'Validation failed!'
+        puts "\n"
+    end
+  end
+
+  desc 'clean', "Remove temporary artifacts"
+  def clean(what)
+    if what == "cache"
+      FileUtils.rm_rf(Dir.glob('.packer_cache/*'))
+    elsif what == "boxes"
+      FileUtils.rm_rf(Dir.glob('./vb_output/*.box'))
+    end
+  end
+
+end

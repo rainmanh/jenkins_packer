@@ -1,0 +1,28 @@
+---
+#- name: Creating New jenkins jenkins_job
+#  shell: "java -jar {{ jenkins_home_dir }}/jenkins-cli.jar -s http://localhost:8080/ create-job {{ item }} < roles/jenkins/templates/{{ item }}.xml.j2"
+
+#- jenkins_job:
+#    config: "{{ lookup('file', 'templates/jenkins_jobs/' + item + '.xml.j2') }}"
+#    name: "{{ item }}"
+#    user:
+#    password:
+#    url: http://localhost:8080
+#  with_items:
+#    - test
+
+- name: Creating Jenkis jobs ini file.
+  file: path=/etc/jenkins_jobs state=directory
+
+- name: Copy jenkins_jobs.ini to /etc/jenkins_jobs
+  copy: src=etc/jenkins_jobs/jenkins_jobs.ini dest=/etc/jenkins_jobs/jenkins_jobs.ini mode=0644
+
+- name: Check on Jenkins Jobs Already Done
+  stat: path="/tmp/{{ item }}.jenkins_job_done"
+  with_items: "{{ jenkins_jobs }}"
+  register: jenkins_job_done
+
+- name: Applying Jenkins jobs if Not Previously Done
+  shell: "jenkins-jobs update /opt/ansible/roles/jenkins/templates/jenkins_jobs/{{ item.item }}.xml.j2; touch /tmp/{{ item.item }}.jenkins_job_done"
+  with_items: "{{ jenkins_job_done.results }}"
+  when: not item.stat.exists
