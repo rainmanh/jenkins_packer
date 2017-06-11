@@ -118,7 +118,11 @@ This option should be *false* if you want to run a custom installation.
  'github-oauth'
  'ldap
  ````
-
+ * If you are going to build a Docker Container do not forget the set the flag for Docker as true in the Variables:
+ 
+ ````
+ jenkins_docker: true
+ ````
 
 Dependencies
 ------------
