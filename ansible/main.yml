@@ -11,4 +11,4 @@
 
   roles:
    - jenkins
-   - iptables
+   - { role: iptables, when: not jenkins_docker }

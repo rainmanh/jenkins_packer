@@ -15,9 +15,8 @@
     - configure_jenkins_user
 
 - include: plugins.yml
-  when: jenkins_manage_plugins
+  when: jenkins_manage_plugins and jenkins_config_info.disable_setup_wizard
 
 - include: config_jenkins.yml
-  when: config_jenkins
 
 - include: finalize.yml

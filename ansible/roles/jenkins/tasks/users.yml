@@ -1,4 +1,5 @@
 ---
+
 - name: users | Generating Jenkins SSH Keys
   user:
     name: "jenkins"
@@ -20,10 +21,3 @@
     src: "{{ jenkins_home_dir }}/.ssh/id_rsa.pub"
     dest: "./ssh_pub_keys/jenkins@{{ ansible_hostname }}.pub"
     flat: yes
-
-- name: Change ownership Home Directory
-  file:
-    path: "{{ jenkins_home_dir }}"
-    recurse: yes
-    owner: jenkins
-    group: jenkins

@@ -27,6 +27,7 @@ jenkins_config_info:
   use_security: true
   auth_strategy: 'GlobalMatrixAuthorizationStrategy'  #AuthorizationStrategy$Unsecured, FullControlOnceLoggedInAuthorizationStrategy or GlobalMatrixAuthorizationStrategy it github OAUTH
   disable_remember_me: false
+  disable_setup_wizard: false
   system_message: 'Welcome to the Jenkins lab'
 jenkins_github_oauth:
     enabled: true
@@ -88,13 +89,35 @@ jenkins_jobs:
 
   * To setup Github OAUTH read the following: https://wiki.jenkins-ci.org/display/JENKINS/GitHub+OAuth+Plugin
   * For Github OAUTH you need **GlobalMatrixAuthorizationStrategy**
-  
+
 
 * jenkins_jobs :
 
   - The location for the jobs it's at: **files/etc/jenkins_jobs**
   - Task **tasks/jenkins_jobs.yml**
 
+
+ *Note*:
+
+ * If you activate the Wizard:   
+````
+ jenkins_config_info.disable_setup_wizard: true
+````
+A brand new installation will take place , so not plugins or jobs will be installed.
+This option should be *false* if you want to run a custom installation.
+
+ * The following plugins are recommended:
+
+ ````
+ 'matrix-auth'
+ 'matrix-project'
+ 'jquery'
+ 'active-directory'
+ 'build-pipeline-plugin'
+ 'github'
+ 'github-oauth'
+ 'ldap
+ ````
 
 
 Dependencies
@@ -127,8 +150,3 @@ Authors Information
 This is a branch of https://github.com/mrlesmithjr/ansible-jenkins owned by Larry Smith Jr.(Many thanks for Sharing all this Larry)
 
 I have expanded some parts to include GITHUB OAUTH and some extra changes Ubuntu related.
-
-Larry Smith Jr.
-- @mrlesmithjr
-- http://everythingshouldbevirtual.com
-- mrlesmithjr [at] gmail.com

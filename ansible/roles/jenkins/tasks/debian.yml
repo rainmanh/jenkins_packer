@@ -29,8 +29,28 @@
     state: "present"
 
 - name: debian | Get default Jenkins home
-  shell: "grep 'JENKINS_HOME=' /etc/default/jenkins | awk -F 'JENKINS_HOME=' '{print $2}'"
+  shell: ". /etc/default/jenkins; echo $JENKINS_HOME"
   register: jenkins_initial_default_home
 
-- name: Update /etc/default/jenkins on Ubuntu
+- name: users | Creating Directory Jenkins Directory
+  file:
+    path: "{{ jenkins_home_dir }}"
+    state: directory
+    owner: jenkins
+    group: jenkins
+  when: jenkins_home_dir != jenkins_initial_default_home.stdout
+
+- name: user | Stop Jenkins
+  service:
+    name: "jenkins"
+    state: "stopped"
+
+- name: users | Changing Jenkins Home Directory
+  shell: "usermod -d {{ jenkins_home_dir }} jenkins"
+  when: jenkins_home_dir != jenkins_initial_default_home.stdout
+
+- name: debian | Update /etc/default/jenkins on Ubuntu
   template: src=../ansible/roles/jenkins/templates/etc/default/jenkins.j2 dest=/etc/default/jenkins
+
+- name: debian | Installs bash_profile for jenkins
+  template: src=../ansible/roles/jenkins/templates/jenkins_bash_profile.j2 dest=/data/jenkins/.bash_profile owner=jenkins group=jenkins mode=644
