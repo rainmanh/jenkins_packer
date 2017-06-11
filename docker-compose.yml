@@ -1,0 +1,8 @@
+version: '2'
+
+services:
+   jenkins:
+     image: <docker image ID>
+     restart: always
+     ports:
+       - "8080:8080"

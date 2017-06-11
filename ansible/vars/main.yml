@@ -8,6 +8,7 @@ jenkins_ansible_info:
   home: '/usr/local/bin'
 jenkins_apt_repo: 'deb http://pkg.jenkins-ci.org/debian binary/'
 jenkins_cli_path: '{{ jenkins_home_dir }}/jenkins-cli.jar'
+jenkins_docker: false
 jenkins_config_info:
   auth_strategy: 'GlobalMatrixAuthorizationStrategy'  #AuthorizationStrategy$Unsecured, FullControlOnceLoggedInAuthorizationStrategy or GlobalMatrixAuthorizationStrategy if github OAUTH
   disable_remember_me: false

@@ -1,0 +1,27 @@
+---
+galaxy_info:
+  author: Gonzalo Fernandez Ordas
+  description: Jenkins
+  company: Ansible
+  license: license (GPLv2, CC-BY, etc)
+  min_ansible_version: 1.9.2
+  platforms:
+  - name: EL
+    versions:
+    - 2
+  categories:
+  #- cloud
+  #- cloud:ec2
+  #- cloud:gce
+  #- cloud:rax
+  #- clustering
+  #- database
+  #- database:nosql
+  #- database:sql
+  - development
+  #- monitoring
+  #- networking
+  #- packaging
+  #- system
+  #- web
+dependencies: []

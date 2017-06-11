@@ -5,7 +5,7 @@
   <numExecutors>{{ jenkins_config_info.num_executors }}</numExecutors>
   <mode>NORMAL</mode>
   <useSecurity>{{ jenkins_config_info.use_security|lower }}</useSecurity>
-{% if jenkins_ldap_info.enabled and not jenkins_config_info.auth_strategy == "GlobalMatrixAuthorizationStrategy" %}
+{% if jenkins_ldap_info.enabled or (jenkins_github_oauth.enabled is none) or ("GlobalMatrixAuthorizationStrategy" not in jenkins_config_info.auth_strategy) %}
  <authorizationStrategy class="hudson.security.{{ jenkins_config_info.auth_strategy }}"/>
 {% else %}
  <authorizationStrategy class="hudson.security.{{ jenkins_config_info.auth_strategy }}">
@@ -38,7 +38,7 @@
     <groupIdStrategy class="jenkins.model.IdStrategy$CaseInsensitive"/>
   </securityRealm>
 {% endif %}
-{% if jenkins_github_oauth.enabled|string()  %}
+{% if jenkins_github_oauth.enabled %}
 <securityRealm class="org.jenkinsci.plugins.GithubSecurityRealm">
   <githubWebUri>https://github.com</githubWebUri>
   <githubApiUri>https://api.github.com</githubApiUri>

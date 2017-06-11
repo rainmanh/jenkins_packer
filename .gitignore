@@ -19,3 +19,5 @@ ansi_env/
 #VirtualBox
 *.box
 *.vbox
+
+#ansible

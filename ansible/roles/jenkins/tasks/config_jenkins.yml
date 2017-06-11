@@ -3,29 +3,50 @@
 # disables the Jenkins CLI until the user has completed it. The auto-generated
 # password for the default 'admin' account will be written out to
 # /var/lib/jenkins/secrets/initialAdminPassword.
+
+- name: config_jenkins | debug not jenkins_config_info.disable_setup_wizard
+  debug: msg="wizard {{ jenkins_config_info.disable_setup_wizard }}"
+  when: not jenkins_config_info.disable_setup_wizard
+
+- name: config_jenkins | debug   jenkins_config_info.disable_setup_wizard
+  debug: msg="wizard {{ jenkins_config_info.disable_setup_wizard }}"
+  when: jenkins_config_info.disable_setup_wizard
+
 - name: config_jenkins | Disabling Jenkins Setup Wizard
   lineinfile:
-    dest: "{{ jenkins_config_file }}"
-    regexp: "^{{ jenkins_java_options }}="
-    line: "{{ jenkins_java_options }}=\"-Djava.awt.headless=true -Djenkins.install.runSetupWizard=false\""
+    path: "{{ jenkins_config_file }}"
+    regexp: "^{{ jenkins_java_options }}"
+    line: "{{ jenkins_java_options }}\"-Djava.awt.headless=true -Djenkins.install.runSetupWizard=false\""
   register: "jenkins_setup_wizard_disabled"
   when: jenkins_config_info.disable_setup_wizard
 
 - name: config_jenkins | Enabling Jenkins Setup Wizard
   lineinfile:
-    dest: "{{ jenkins_config_file }}"
-    regexp: "^{{ jenkins_java_options }}="
-    line: "{{ jenkins_java_options }}=\"-Djava.awt.headless=true\""
+    path: "{{ jenkins_config_file }}"
+    regexp: "^{{ jenkins_java_options }}"
+    line: "{{ jenkins_java_options }}\"-Djava.awt.headless=true -Djenkins.install.runSetupWizard=true\""
   register: "jenkins_setup_wizard_enabled"
   when: not jenkins_config_info.disable_setup_wizard
 
-- name: config_jenkins | Restarting Jenkins (Setup Wizard Disabled)
+- name: config_jenkins | Restarting Jenkins (Setup Wizard Enable or Disabled)
   service:
     name: "jenkins"
     state: "restarted"
   when: >
         jenkins_setup_wizard_disabled.changed or
         jenkins_setup_wizard_enabled.changed
+
+- name: config_jenkins | Ensuring Jenkins Is Running
+  service:
+    name: "jenkins"
+    state: "started"
+  when: jenkins_docker
+
+- name: config_jenkins | Waiting For Jenkins To Start
+  wait_for:
+    port: 8080
+    delay: 10
+  when: jenkins_docker
 
 - name: config_jenkins | Configuring Jenkins
   template:
@@ -52,7 +73,9 @@
   file:
     dest: "{{ jenkins_home_dir }}/.jenkins_secure_setup"
     state: "touch"
+    owner: jenkins
+    group: jenkins
   when: >
         not jenkins_secure_setup.stat.exists and
         (jenkins_config_info.use_security is defined and
-        jenkins_config_info.use_security)
+          jenkins_config_info.use_security)

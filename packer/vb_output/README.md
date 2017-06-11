@@ -7,7 +7,7 @@ This Directory contains the generated Output from the **packer build vb_ubuntu-1
 VAGRANTFILE="file://ubuntu-16.10-virtualbox-20170223154251.box"
 ```
 
-Execution, as usual
+Execution, as usual:
 
 ```
 vagrant up
