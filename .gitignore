@@ -20,4 +20,6 @@ ansi_env/
 *.box
 *.vbox
 
-#ansible
+#Docker
+docker_files/
+

@@ -1,21 +1,32 @@
 ---
-- name: finalize | Checking If Initial Admin Password Exists No Docker
-  stat: path="{{ jenkins_home_dir }}/secrets/initialAdminPassword"
+- name: finalize | restart jenkins
+  service:
+    name: "jenkins"
+    state: restarted
+
+- name: finalize | Waiting For Jenkins To Start
+  wait_for:
+    port: 8080
+    delay: 20
+
+- name: finalize | shell
+  shell: "ls -rtla {{ jenkins_home_dir }}/secrets/; {{ jenkins_home_dir }}/"
+  ignore_errors: True
+
+- name: finalize | Updating the secrets
+  become: yes
+  become_method: sudo
+  shell: "cp -p /var/lib/jenkins/secrets/initialAdminPassword {{ jenkins_home_dir }}/secrets/initialAdminPassword"
+  ignore_errors: True
+  when: ( ansible_os_family == "Debian" ) and ( jenkins_home_dir != jenkins_initial_default_home.stdout )
+
+- name: finalize | Checking If Initial Admin Password Exists
+  stat:
+    path: "{{ jenkins_home_dir }}/secrets/initialAdminPassword"
   register: "jenkins_initial_password_check"
-  #when: jenkins_config_info.disable_setup_wizard
-  ignore_errors: yes
-  notify:
-    - 'restart jenkins'
 
 - name: finalize | Capturing Initial Admin Password
   command: "cat {{ jenkins_home_dir }}/secrets/initialAdminPassword"
-  register: "jenkins_initialAdminPassword"
-  changed_when: false
-  when: jenkins_initial_password_check.stat.exists and (not jenkins_config_info.disable_setup_wizard)
-
-
-- name: finalize | Capturing Initial Admin Password -- Not Docker
-  command: "cat /var/lib/jenkins/secrets/initialAdminPassword"
   register: "jenkins_initialAdminPassword"
   changed_when: false
   when: jenkins_initial_password_check.stat.exists

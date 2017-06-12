@@ -44,66 +44,34 @@
   when: >
         not jenkins_secure_setup.stat.exists
 
-- name: Stop Jenkins
-  service: name=jenkins  state=stopped
-
-- name: stat config.xml
-  stat: path=/var/lib/jenkins/config.xml
-  register: file_config_xml
-
-- name: plugins | Gathering Installed Plugins
-  shell: "java -jar {{ jenkins_cli_path }} -s http://localhost:8080 list-plugins | cut -f 1 -d ' '"
-  register: "jenkins_installed_plugins"
-  changed_when: false
-  when: >
-        not jenkins_secure_setup.stat.exists
+- name: plugins | debug
+  debug: msg="jenkins_initial_default_home_stdout={{ jenkins_initial_default_home.stdout }} jenkins_home_dir={{ jenkins_home_dir }}"
+  notify:
+    - 'stop jenkins'
 
 - name: preparation for plugins | Disabling Security | {{ jenkins_home_dir }}/config.xml
   replace:
     dest: "{{ jenkins_home_dir }}/config.xml"
     regexp: '^(.*)<denyAnonymousReadAccess>true</denyAnonymousReadAccess>(.*)$'
     replace: '\1<denyAnonymousReadAccess>false</denyAnonymousReadAccess>\2'
-  when: not file_config_xml.stat.exists
 
 - name: preparation for plugins | Disabling Security | {{ jenkins_home_dir }}/config.xml
   replace:
     dest: "{{ jenkins_home_dir }}/config.xml"
     regexp: '^(.*)hudson.security.FullControlOnceLoggedInAuthorizationStrategy(.*)$'
     replace: '\1hudson.security.AuthorizationStrategy$Unsecured\2'
-  when: not file_config_xml.stat.exists
   notify:
     - 'restart jenkins'
-
-- name: preparation for plugins | Disabling Security | {{ jenkins_home_dir }}/config.xml
-  replace:
-    dest: "/var/lib/jenkins/config.xml"
-    regexp: '^(.*)<denyAnonymousReadAccess>true</denyAnonymousReadAccess>(.*)$'
-    replace: '\1<denyAnonymousReadAccess>false</denyAnonymousReadAccess>\2'
-  when: file_config_xml.stat.exists
-
-- name: preparation for plugins | Disabling Security | {{ jenkins_home_dir }}/config.xml
-  replace:
-    dest: "/var/lib/jenkins/config.xml"
-    regexp: '^(.*)hudson.security.FullControlOnceLoggedInAuthorizationStrategy(.*)$'
-    replace: '\1hudson.security.AuthorizationStrategy$Unsecured\2'
-  when: file_config_xml.stat.exists
-  notify:
-    - 'restart jenkins'
-
-- name: plugins | Ensuring Jenkins Is Running
-  service:
-    name: "jenkins"
-    state: "started"
 
 - name: plugins | Waiting For Jenkins To Start
   wait_for:
     port: 8080
-    delay: 10
+    delay: 20
 
 - include: jenkins_jobs.yml
 
 - name: plugins | Installing Plugins
-  shell: "java -jar {{ jenkins_cli_path }} -s http://localhost:8080 install-plugin {{ item }}; sleep 2"
+  shell: "java -jar {{ jenkins_cli_path }} -s http://localhost:8080 install-plugin {{ item }}"
   notify:
     - 'restart jenkins'
   with_items: '{{ jenkins_plugins }}'
