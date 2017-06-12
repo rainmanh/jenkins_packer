@@ -1,5 +1,4 @@
 ---
-
 - name: users | Generating Jenkins SSH Keys
   user:
     name: "jenkins"

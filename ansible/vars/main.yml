@@ -3,12 +3,12 @@
 config_jenkins: false  #defines if jenkins will be configured from templates or left as default install
 enable_jenkins_sudo: false  #defines if jenkins user should have sudo rights (Useful for running Ansible tasks from CLI)
 install_tower_cli: false  #defines if ansible tower cli should be installed
+jenkins_docker: true # To be used if you are going to build a Docker Container
 jenkins_ansible_info:
   name: 'Default'
   home: '/usr/local/bin'
 jenkins_apt_repo: 'deb http://pkg.jenkins-ci.org/debian binary/'
 jenkins_cli_path: '{{ jenkins_home_dir }}/jenkins-cli.jar'
-jenkins_docker: false # To be used if you are going to build a Docker Container
 jenkins_config_info:
   auth_strategy: 'GlobalMatrixAuthorizationStrategy'  #AuthorizationStrategy$Unsecured, FullControlOnceLoggedInAuthorizationStrategy or GlobalMatrixAuthorizationStrategy if github OAUTH
   disable_remember_me: false
@@ -24,9 +24,11 @@ jenkins_github_oauth:
     - 'github_user_1'
     - 'github_user_2'
 jenkins_debian_pre_req_packages:
+  - 'software-properties-common'
+  - 'sudo'
+  - 'python-pip'
   - 'default-jdk'
   - 'default-jre-headless'
-  - 'git'
   - 'jenkins'
 jenkins_email_info:
   default_suffix: '@{{ pri_domain_name }}'
@@ -47,19 +49,38 @@ jenkins_ldap_info:
   disable_email_address_resolver: false
 jenkins_manage_plugins: false  #Defines if plugins will be managed using Ansible...
 jenkins_plugins:
+  - 'matrix-auth'
+  - 'matrix-project'
+  - 'jquery'
   - 'active-directory'
   - 'build-pipeline-plugin'
   - 'github'
   - 'github-oauth'
+  - 'active-directory'
+  - 'ansible'
+  - 'build-pipeline-plugin'
+  - 'git'
+  - 'gitlab-plugin'
+  - 'job-dsl'
   - 'ldap'
+  - 'logstash'
   - 'PowerShell'
   - 'rundeck'
   - 'ssh'
   - 'travis-yml'
   - 'vagrant'
+  - 'vmware-vrealize-automation-plugin'
+  - 'vmware-vrealize-codestream'
+  - 'vsphere-cloud'
+  - 'workflow-aggregator'
 jenkins_redhat_pre_req_packages:
   - 'git'
   - 'java-1.7.0-openjdk'
+pip_dependencies:
+  - 'lxml'
+  - 'PyYAML'
+  - 'stevedore'
+  - 'jenkins-job-builder'
 jenkins_repo_key: 'http://pkg.jenkins-ci.org/{{ ansible_os_family|lower }}/jenkins-ci.org.key'
 pri_domain_name: 'example.org'
 jenkins_jobs:
